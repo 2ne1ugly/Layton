@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 
@@ -11,24 +12,31 @@ import (
 // createAccount
 //
 type createAccountRequest struct {
-	UserId string `json:"userId"`
+	Username string `json:"username"`
 }
 
 type createAccountResponse struct {
-	ResultCode int64 `json:"ResultCode"`
+	ResultCode int64 `json:"resultCode"`
 }
 
 func createAccountHandler(w http.ResponseWriter, r *http.Request) {
 	LaytonLog("Handling create account")
 
-	//Read json
-	var request createAccountRequest
-	if !ReadJSON(r, request) {
+	//Read content
+	data, ok := ReadContent(r)
+	if !ok {
 		LaytonLog("Create Account Bad request")
-		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	LaytonLog(request.UserId)
+	LaytonLog(string(data))
+
+	//Parse to Json
+	var request createAccountRequest
+	err2 := json.Unmarshal(data, &request)
+	if err2 != nil {
+		LaytonLog(err2.Error())
+		return
+	}
 
 	//Setup Response and defer sending response
 	w.Header().Set("Content-Type", "application/json")
@@ -40,22 +48,25 @@ func createAccountHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		LaytonLog(string(responseBlob))
 		w.Write(responseBlob)
 	}()
 
 	//Query if it already exists
-	var queryUserId string
-	row := DB.QueryRow("SELECT userId FROM accounts WHERE userId = ?", request.UserId)
-	err := row.Scan(queryUserId)
-	if err == nil {
+	queriedAccount := Account{}
+	err := db.Get(&queriedAccount, "SELECT * FROM accounts WHERE username=$1", request.Username)
+	if err != sql.ErrNoRows {
+		if err != nil {
+			LaytonLog(err.Error())
+		}
 		response.ResultCode = AlreadyExists
 		return
 	}
 
 	//Try to insert it
-	_, err1 := DB.Exec("INSERT INTO accounts (userId) VALUES (?)", request.UserId)
-	if err1 != nil {
-		LaytonLog("Create Account Internal Error")
+	_, err = db.Queryx("INSERT INTO layton.accounts (username) VALUES ($1)", request.Username)
+	if err != nil {
+		LaytonLog(err.Error())
 		response.ResultCode = InternalError
 		return
 	}
@@ -68,21 +79,29 @@ func createAccountHandler(w http.ResponseWriter, r *http.Request) {
 // login
 //
 type loginRequest struct {
-	UserId string `json:"userId"`
+	Username string `json:"username"`
 }
 
 type loginResponse struct {
-	ResultCode  int64  `json:"ResultCode"`
-	AccessToken string `json:"AccessToken"`
+	ResultCode  int64  `json:"resultCode"`
+	AccessToken string `json:"accessToken"`
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	LaytonLog("Handling Login")
-	//Read json
-	var request loginRequest
-	if !ReadJSON(r, request) {
+
+	//Read content
+	data, ok := ReadContent(r)
+	if !ok {
 		LaytonLog("Create Account Bad request")
-		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	//Parse to JSON
+	var request loginRequest
+	err2 := json.Unmarshal(data, &request)
+	if err2 != nil {
+		LaytonLog(err2.Error())
 		return
 	}
 
@@ -100,10 +119,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	//Query if it already exists
+
 	var queriedAccount Account
-	row := DB.QueryRow("SELECT userId FROM accounts WHERE userId = ?", request.UserId)
-	err := row.Scan(queriedAccount)
+	err := db.Get(&queriedAccount, "SELECT * FROM accounts WHERE username = ?", request.Username)
 	if err != nil {
+		LaytonLog(err.Error())
+		LaytonLog("incorrect credentials")
 		response.ResultCode = IncorrectCredentials
 		return
 	}
@@ -114,6 +135,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		response.AccessToken = queriedAccount.sessionToken
 	} else {
 		response.ResultCode = InternalError
+		LaytonLog("internal error")
 	}
 }
 
@@ -121,7 +143,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 // logout
 //
 type logoutRequest struct {
-	UserId string `json:"userId"`
+	Username string `json:"username"`
 }
 
 type logoutResponse struct {
@@ -131,11 +153,18 @@ type logoutResponse struct {
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	LaytonLog("Handling Logout")
 
-	//Read json
-	var request logoutRequest
-	if !ReadJSON(r, request) {
+	//Read content
+	data, ok := ReadContent(r)
+	if !ok {
 		LaytonLog("Create Account Bad request")
-		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	//Parse to JSON
+	var request logoutRequest
+	err2 := json.Unmarshal(data, &request)
+	if err2 != nil {
+		LaytonLog(err2.Error())
 		return
 	}
 
@@ -154,8 +183,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	//Query if it already exists
 	var queriedAccount Account
-	row := DB.QueryRow("SELECT userId FROM accounts WHERE userId = ?", request.UserId)
-	err := row.Scan(queriedAccount)
+	err := db.Get(&queriedAccount, "SELECT username FROM accounts WHERE username = $1", request.Username)
 	if err != nil {
 		LaytonLog("Logout Account does not exist")
 		response.ResultCode = DoesNotExist

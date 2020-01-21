@@ -1,21 +1,17 @@
 package main
 
 import (
-	"database/sql"
 	"log"
 	"net/http"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 )
-
-//DB : Global variable db interface, can handle concurrent goroutines
-var DB *sql.DB
 
 func main() {
 	//Init SQL
-	LaytonLog("Creating SQL")
+	LaytonLog("Setting up SQL")
 	CreateSQL()
 	defer DestroySQL()
 
@@ -30,7 +26,7 @@ func main() {
 	//Define server type
 	srv := &http.Server{
 		Handler: r,
-		Addr:    "127.0.0.1:8000",
+		Addr:    "10.10.151.75:8000",
 
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,

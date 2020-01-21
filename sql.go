@@ -1,23 +1,33 @@
 package main
 
 import (
-	"database/sql"
+	"io/ioutil"
 	"log"
+
+	"github.com/jmoiron/sqlx"
 )
+
+//DB : Global variable db interface, can handle concurrent goroutines
+var db *sqlx.DB
 
 //CreateSQL initializes database interface
 func CreateSQL() {
-	db, err := sql.Open("mysql",
-		"root:mangoiscute@/Layton")
+	data, _ := ioutil.ReadFile("pwd")
+
+	dbb, err := sqlx.Connect("postgres", string(data))
 	if err != nil {
 		log.Fatal(err)
 	}
-	DB = db
+	// _, err = db.Query("USE layton")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	db = dbb
 }
 
 //DestroySQL destorys database interface
 func DestroySQL() {
-	DB.Close()
+	db.Close()
 
-	DB = nil
+	db = nil
 }

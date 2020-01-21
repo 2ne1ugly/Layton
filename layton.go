@@ -10,14 +10,14 @@ import (
 
 //Account represents "RAM" version of account info.
 type Account struct {
-	userID       string
+	Username     string `db:"username"`
 	sessionToken string
 }
 
 //LaytonServer is where data is stored in to run the server
 type LaytonServer struct {
 	bInitialized   bool
-	onlineAccounts map[string]Account //Key is userID
+	onlineAccounts map[string]Account //Key is username
 }
 
 var layton LaytonServer
@@ -34,14 +34,14 @@ func LogIntoLayton(account *Account) bool {
 	}
 
 	//Check if account is logged in
-	_, ok := layton.onlineAccounts[account.userID]
+	_, ok := layton.onlineAccounts[account.Username]
 	if ok {
 		return false
 	}
-	account.sessionToken = account.userID + "_" + strconv.FormatInt(int64(len(layton.onlineAccounts)), 10)
+	account.sessionToken = account.Username + "_" + strconv.FormatInt(int64(len(layton.onlineAccounts)), 10)
 
 	//Add to onlineAccounts
-	layton.onlineAccounts[account.userID] = *account
+	layton.onlineAccounts[account.Username] = *account
 	return true
 }
 
@@ -52,12 +52,12 @@ func LogOutFromLayton(account Account) bool {
 	}
 
 	//Check if account is logged in
-	_, ok := layton.onlineAccounts[account.userID]
+	_, ok := layton.onlineAccounts[account.Username]
 	if !ok {
 		return false
 	}
 
 	//delete from onlineAccounts
-	delete(layton.onlineAccounts, account.userID)
+	delete(layton.onlineAccounts, account.Username)
 	return true
 }

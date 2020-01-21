@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -26,26 +25,20 @@ func LaytonLog(str string) {
 		t.Hour(), t.Minute(), t.Second(), str)
 }
 
-// ReadJSON reads json data blobs from header.
-func ReadJSON(r *http.Request, jsonStruct interface{}) bool {
+// ReadContent reads json contents from header.
+func ReadContent(r *http.Request) ([]byte, bool) {
 	//Check content type and if bad, return
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
-		return false
+		return []byte{}, false
 	}
 
 	//Read Header
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		LaytonLog(err.Error())
-		return false
+		return []byte{}, false
 	}
 
-	LaytonLog(string(data))
-	err2 := json.Unmarshal(data, &jsonStruct)
-	if err2 != nil {
-		LaytonLog(err2.Error())
-		return false
-	}
-	return true
+	return data, true
 }
