@@ -14,7 +14,7 @@ defmodule Layton.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :plug_cowboy],
+      extra_applications: [:logger, :plug_cowboy, :ranch],
       mod: {Layton.Application, []}
     ]
   end
@@ -23,7 +23,7 @@ defmodule Layton.MixProject do
   defp deps do
     [
       {:plug_cowboy, "~> 2.1.1"},
-      {:poison, "~> 3.1"},
+      {:poison, "~> 4.0.1"},
       {:ecto_sql, "~> 3.0"},
       {:postgrex, ">= 0.0.0"}
     ]

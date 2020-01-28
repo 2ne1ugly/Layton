@@ -10,7 +10,9 @@ defmodule Layton.Utils do
           else
             %{acc | k => jv}
           end
-        :error -> acc
+
+        :error ->
+          acc
       end
     end)
   end

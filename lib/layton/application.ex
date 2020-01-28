@@ -13,7 +13,8 @@ defmodule Layton.Application do
         plug: Layton.Endpoint,
         options: [port: 4001]
       ),
-      Layton.Server
+      Layton.Server,
+      Layton.Client.Manager
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
