@@ -1,5 +1,6 @@
 defmodule Layton.Identity.Router do
   use Plug.Router
+  require Logger
   plug(:match)
   plug(Plug.Parsers, parsers: [:json], json_decoder: Poison)
   plug(Plug.Logger, log: :debug)
@@ -18,6 +19,24 @@ defmodule Layton.Identity.Router do
   match _ do
     send_resp(conn, 404, "oops... Nothing here :(")
   end
+
+  @spec dispatch_task(map, integer, any) :: {:noreply, any} | {:stop, :normal, any}
+  def dispatch_task(content, minor, state) do
+    result =
+      case minor do
+        0 ->
+          Layton.Session.CreateSession.process_task(content, state)
+
+        _ ->
+          Logger.info("wrong dispatch")
+          {:error, :wrong_dispatch}
+      end
+
+    case result do
+      {:ok, state} -> {:noreply, state}
+      {:error, _reason} -> {:stop, :normal, state}
+    end
+  end
 end
 
 defmodule Layton.Identity.CreateAccount do
@@ -30,6 +49,7 @@ defmodule Layton.Identity.CreateAccount do
     1 -> success
     2 -> error
   """
+  @spec process(any) :: {integer, binary}
   def process(body) do
     {status, raw_body} =
       case Layton.Utils.json_to_struct(__MODULE__, body) do
@@ -59,6 +79,7 @@ defmodule Layton.Identity.Login do
     1 -> success
     2 -> error
   """
+  @spec process(any) :: {integer, binary}
   def process(body) do
     {status, raw_body} =
       case Layton.Utils.json_to_struct(__MODULE__, body) do
