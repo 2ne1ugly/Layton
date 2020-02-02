@@ -20,7 +20,7 @@ defmodule Layton.Endpoint do
   plug(:dispatch)
 
   # For serveral http requests
-  match("/Identity/*_", to: Layton.Identity.Router)
+  match("/Identity/*_", to: Layton.Router.Identity)
   # match("/Session/*_", to: Layton.Session.Router)
 
   # Handle incoming events, if the payload is the right shape, process the

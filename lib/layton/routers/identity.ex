@@ -1,4 +1,4 @@
-defmodule Layton.Identity.Router do
+defmodule Layton.Router.Identity do
   use Plug.Router
   require Logger
   plug(:match)
@@ -7,7 +7,7 @@ defmodule Layton.Identity.Router do
   plug(:dispatch)
 
   post "/Identity/CreateAccount" do
-    {status, body} = Layton.Identity.CreateAccount.process(conn.body_params)
+    {status, body} = Layton.Router.Identity.CreateAccount.process(conn.body_params)
     send_resp(conn, status, body)
   end
 
@@ -20,28 +20,18 @@ defmodule Layton.Identity.Router do
     send_resp(conn, 404, "oops... Nothing here :(")
   end
 
-  @spec dispatch_task(map, integer, any) :: {:noreply, any} | {:stop, :normal, any}
-  def dispatch_task(content, minor, state) do
-    result =
-      case minor do
-        0 ->
-          Layton.Session.CreateSession.process_task(content, state)
-
-        _ ->
-          Logger.info("wrong dispatch")
-          {:error, :wrong_dispatch}
-      end
-
-    case result do
-      {:ok, state} -> {:noreply, state}
-      {:error, _reason} -> {:stop, :normal, state}
+  def dispatch_task(_content, minor, state) do
+    case minor do
+      _ ->
+        Logger.info("wrong dispatch")
+        {:error, :wrong_dispatch, state}
     end
   end
 end
 
-defmodule Layton.Identity.CreateAccount do
+defmodule Layton.Router.Identity.CreateAccount do
   defstruct account: %Layton.Account{}
-
+  require Logger
   @moduledoc """
   Creates Account
   Possible Result Codes:
@@ -66,6 +56,9 @@ defmodule Layton.Identity.CreateAccount do
       end
 
     {status, Poison.encode!(raw_body)}
+  end
+  def help() do
+    Logger.info("save me")
   end
 end
 

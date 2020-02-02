@@ -1,26 +1,19 @@
-defmodule Layton.Server.Router do
+defmodule Layton.Router.Server do
   require Logger
 
-  @spec dispatch_task(map, integer, any) :: {:noreply, any} | {:stop, :normal, any}
   def dispatch_task(content, minor, state) do
-    result =
-      case minor do
-        0 ->
-          Layton.Server.AuthorizeSocket.process_task(content, state)
+    case minor do
+      0 ->
+        Layton.Router.Server.AuthorizeSocket.process_task(content, state)
 
-        _ ->
-          Logger.info("wrong dispatch")
-          {:error, :wrong_dispatch}
-      end
-
-    case result do
-      {:ok, state} -> {:noreply, state}
-      {:error, _reason} -> {:stop, :normal, state}
+      _ ->
+        Logger.info("wrong dispatch")
+        {:error, :wrong_dispatch, state}
     end
   end
 end
 
-defmodule Layton.Server.AuthorizeSocket do
+defmodule Layton.Router.Server.AuthorizeSocket do
   defstruct username: nil, token: nil
 
   @moduledoc """

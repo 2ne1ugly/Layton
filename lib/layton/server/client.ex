@@ -56,30 +56,29 @@ defmodule Layton.Client do
   # major_type = 4 bytes
   # minor_type = 4 bytes
 
-  defmacrop server_signiture, do: "SERVER_START###\0"
-  defmacrop client_signiture, do: "CLIENT_START###\0"
+  defmacrop server_signiture, do: "SERVER_START####"
+  defmacrop client_signiture, do: "CLIENT_START####"
 
-  @spec send_packet({integer, integer}, any, any) :: any
   def send_packet({major, minor}, packet, state) do
     encoded_packet = Poison.encode!(packet)
 
     full_data =
-      <<server_signiture(), byte_size(encoded_packet)::32, major::32, minor::32,
-        encoded_packet::binary>>
+      <<server_signiture(), byte_size(encoded_packet)::little-32, major::little-32,
+        minor::little-32, encoded_packet::binary>>
 
     state.transport.send(state.socket, full_data)
   end
 
   @impl true
   def handle_info({:tcp, _socket, packet}, state) do
-    data = state.data <> packet
+    state = %{state | data: state.data <> packet}
     header_size = byte_size(client_signiture()) + 12
 
-    case data do
+    case state.data do
       # match header
       <<header::binary-size(header_size), rest::binary>> ->
         case header do
-          <<client_signiture(), content_size::32, major::32, minor::32>>
+          <<client_signiture(), content_size::little-32, major::little-32, minor::little-32>>
           when content_size < 0x1000000 ->
             case rest do
               <<content::binary-size(content_size), rest::binary>> ->
@@ -88,9 +87,9 @@ defmodule Layton.Client do
                 case Poison.decode(content) do
                   {:ok, content} ->
                     process_content(content, major, minor, state)
-                    Logger.info("incorrect json data")
 
                   {:error, _} ->
+                    Logger.error("poison parse failed")
                     {:stop, :normal, state}
                 end
 
@@ -99,7 +98,7 @@ defmodule Layton.Client do
             end
 
           _ ->
-            Logger.info("incorrect signiture match")
+            Logger.error("incorrect signiture match")
             {:stop, :normal, state}
         end
 
@@ -109,40 +108,46 @@ defmodule Layton.Client do
   end
 
   @impl true
-  def handle_info({:tcp_closed, socket}, state) do
-    state.transport.close(socket)
-    {ip_address, port} = state.peer
-    pretty_ip_address = Enum.join(Tuple.to_list(ip_address), ".")
-    Logger.info("lost connection on #{pretty_ip_address}:#{port}")
+  def handle_info({:tcp_closed, _socket}, state) do
+    Logger.info("socket was closed!")
     {:stop, :normal, state}
   end
 
   @impl true
-  def handle_info({:tcp_error, socket}, state) do
-    state.transport.close(socket)
-    {ip_address, port} = state.peer
-    pretty_ip_address = Enum.join(Tuple.to_list(ip_address), ".")
-    Logger.info("lost connection on #{pretty_ip_address}:#{port}")
+  def handle_info({:tcp_error, _socket}, state) do
+    Logger.error("TCP error!")
     {:stop, :normal, state}
   end
 
   defp process_content(content, major, minor, state) do
-    {_status, state} =
+    Logger.info("Processing Request...")
+    result =
       case major do
         0 ->
-          Layton.Server.Router
+          Layton.Router.Server.dispatch_task(content, minor, state)
 
         1 ->
-          Layton.Identity.Router.dispatch_task(content, minor, state)
+          Layton.Router.Identity.dispatch_task(content, minor, state)
 
         2 ->
-          Layton.Session.Router.dispatch_task(content, minor, state)
+          Layton.Router.Session.dispatch_task(content, minor, state)
 
         _ ->
           Logger.info("wrong request type")
           {:error, state}
       end
 
-    {:noreply, state}
+    case result do
+      {:ok, state} -> {:noreply, state}
+      {:error, _reason, state} -> {:stop, :normal, state}
+    end
+  end
+
+  @impl true
+  def terminate(_reason, state) do
+    state.transport.close(state.socket)
+    {ip_address, port} = state.peer
+    pretty_ip_address = Enum.join(Tuple.to_list(ip_address), ".")
+    Logger.info("closing connection on #{pretty_ip_address}:#{port}")
   end
 end
