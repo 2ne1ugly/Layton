@@ -14,7 +14,7 @@ defmodule Layton.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :plug_cowboy, :ranch],
+      extra_applications: [:logger],
       mod: {Layton.Application, []}
     ]
   end
@@ -22,10 +22,12 @@ defmodule Layton.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:plug_cowboy, "~> 2.1.1"},
-      {:poison, "~> 4.0.1"},
       {:ecto_sql, "~> 3.0"},
-      {:postgrex, ">= 0.0.0"}
+      {:postgrex, ">= 0.0.0"},
+      {:grpc, github: "elixir-grpc/grpc"},
+      {:cowlib, "~> 2.8.0", hex: :grpc_cowlib, override: true},
+      {:protobuf, "~> 0.7.1"},
+      {:google_protos, "~> 0.1"}
     ]
   end
 end

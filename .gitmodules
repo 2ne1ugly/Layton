@@ -1,0 +1,3 @@
+[submodule "lib/lgrpc/proto"]
+	path = lib/lgrpc/proto
+	url = https://github.com/2ne1ugly/Ognam-Layton-Protobuf.git
