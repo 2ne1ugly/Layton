@@ -1,4 +1,4 @@
-defmodule Layton.Account do
+defmodule Layton.Schema.Account do
   use Ecto.Schema
 
   schema "accounts" do

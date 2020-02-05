@@ -5,6 +5,7 @@ defmodule Layton.Application do
 
   def start(_type, _args) do
     import Supervisor.Spec
+
     children = [
       Layton.Repo,
       supervisor(GRPC.Server.Supervisor, [{Layton.Endpoint, 50051}])
