@@ -33,8 +33,8 @@ defmodule Layton.Lgrpc.Server do
     end
   end
 
-  def find_sessions(request, _stream) do
-    Lgrpc.FindSessionsResponse.new(result_code: :ERC_ERROR)
+  def find_sessions(_request, _stream) do
+    Lgrpc.FindSessionsResponse.new(result_code: :ERC_SUCCESS, sessions: Layton.Lgrpc.Server.Session.find_sessions())
   end
 
   def join_session(request, _stream) do
