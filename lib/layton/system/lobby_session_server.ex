@@ -1,10 +1,15 @@
-defmodule Layton.Lgrpc.Server.Session do
+defmodule Layton.System.LobbySessionServer do
   @moduledoc """
-  Server that holds current session informations
+  Server that keeps track on list of lobbies (including on-going ones.)
   """
   use GenServer
+  alias __MODULE__
 
   defstruct session_map: %{}
+
+  #
+  # Client Functions
+  #
 
   def create_session(session) do
     GenServer.call(__MODULE__, {:create_session, session})
@@ -14,13 +19,28 @@ defmodule Layton.Lgrpc.Server.Session do
     GenServer.call(__MODULE__, :find_sessions)
   end
 
+  def start_session() do
+    GenServer.call(__MODULE__, :start_session)
+  end
+
+  def join_session() do
+    GenServer.call(__MODULE__, :join_session)
+  end
+
+  def leave_session() do
+    GenServer.call(__MODULE__, :leave_session)
+  end
+
+  #
+  # Bindings
+  #
   def start_link(_args) do
     GenServer.start(__MODULE__, [], name: __MODULE__)
   end
 
   @impl true
   def init([]) do
-    {:ok, %Layton.Lgrpc.Server.Session{}}
+    {:ok, %SessionServer{}}
   end
 
   @impl true

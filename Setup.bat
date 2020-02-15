@@ -1,0 +1,1 @@
+protoc --proto_path=proto --elixir_out=lib layton.proto
