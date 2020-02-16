@@ -1,3 +1,3 @@
-# defmodule Layton.GameServer.Service do
-#   use GRPC.Server, service: Lgrpc.GameServer.Service
-# end
+defmodule Layton.GameSession.Service do
+  use GRPC.Server, service: Lgrpc.LaytonGameSession.Service
+end

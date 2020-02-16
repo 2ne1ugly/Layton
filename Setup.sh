@@ -1,2 +1,2 @@
 #!/bin/bash
-protoc --elixir_out=plugins=grpc:lib layton.proto
+protoc --proto_path=proto --elixir_out=plugins=grpc:lib layton.proto

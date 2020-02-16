@@ -40,7 +40,7 @@ defmodule Layton.System.LobbySessionServer do
 
   @impl true
   def init([]) do
-    {:ok, %SessionServer{}}
+    {:ok, %LobbySessionServer{}}
   end
 
   @impl true
