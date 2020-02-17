@@ -23,5 +23,4 @@ erl_crash.dump
 layton-*.tar
 
 .elixir_ls
-config
 priv
