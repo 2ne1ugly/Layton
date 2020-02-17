@@ -5,7 +5,7 @@ defmodule Layton.Client.Endpoint do
   GRPC.Logger
 
   intercept(GRPC.Logger.Server)
-  run(Layton.Client.Server)
+  run(Layton.Client.Service)
 end
 
 # Session Service Endpoint
@@ -15,5 +15,5 @@ defmodule Layton.GameSession.Endpoint do
   GRPC.Logger
 
   intercept(GRPC.Logger.Server)
-  run(Layton.GameSession.Server)
+  run(Layton.GameSession.Service)
 end

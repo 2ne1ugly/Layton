@@ -13,10 +13,11 @@ defmodule Lgrpc.LobbyState do
   @moduledoc false
   use Protobuf, enum: true, syntax: :proto3
 
-  @type t :: integer | :LS_ERROR | :LS_IN_PROGRESS
+  @type t :: integer | :LS_ERROR | :LS_WAITING_FOR_MATCH | :LS_IN_PROGRESS
 
   field :LS_ERROR, 0
-  field :LS_IN_PROGRESS, 1
+  field :LS_WAITING_FOR_MATCH, 1
+  field :LS_IN_PROGRESS, 2
 end
 
 defmodule Lgrpc.Result do
@@ -31,7 +32,7 @@ defmodule Lgrpc.Result do
   field :result_code, 1, type: Lgrpc.ResultCode, enum: true
 end
 
-defmodule Lgrpc.AccountCredentials do
+defmodule Lgrpc.CreateAccountRequest do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
@@ -41,6 +42,32 @@ defmodule Lgrpc.AccountCredentials do
   defstruct [:username]
 
   field :username, 1, type: :string
+end
+
+defmodule Lgrpc.LoginRequest do
+  @moduledoc false
+  use Protobuf, syntax: :proto3
+
+  @type t :: %__MODULE__{
+          username: String.t()
+        }
+  defstruct [:username]
+
+  field :username, 1, type: :string
+end
+
+defmodule Lgrpc.LoginResponse do
+  @moduledoc false
+  use Protobuf, syntax: :proto3
+
+  @type t :: %__MODULE__{
+          result_code: Lgrpc.ResultCode.t(),
+          auth_token: binary
+        }
+  defstruct [:result_code, :auth_token]
+
+  field :result_code, 1, type: Lgrpc.ResultCode, enum: true
+  field :auth_token, 2, type: :bytes
 end
 
 defmodule Lgrpc.CreateLobbyRequest do
@@ -65,60 +92,72 @@ defmodule Lgrpc.CreateLobbyResponse do
 
   @type t :: %__MODULE__{
           result_code: Lgrpc.ResultCode.t(),
-          session_uuid: String.t()
+          lobby_uuid: binary
         }
-  defstruct [:result_code, :session_uuid]
+  defstruct [:result_code, :lobby_uuid]
 
   field :result_code, 1, type: Lgrpc.ResultCode, enum: true
-  field :session_uuid, 2, type: :string
+  field :lobby_uuid, 2, type: :bytes
 end
 
-defmodule Lgrpc.JoinSessionRequest do
+defmodule Lgrpc.JoinLobbyRequest do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          session_uuid: String.t()
+          lobby_uuid: binary
         }
-  defstruct [:session_uuid]
+  defstruct [:lobby_uuid]
 
-  field :session_uuid, 1, type: :string
+  field :lobby_uuid, 1, type: :bytes
 end
 
-defmodule Lgrpc.JoinSessionResponse do
-  @moduledoc false
-  use Protobuf, syntax: :proto3
-
-  @type t :: %__MODULE__{}
-  defstruct []
-end
-
-defmodule Lgrpc.LobbyStreamRequest do
+defmodule Lgrpc.SendChatMessage do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          stream_message: {atom, any}
+          message: String.t()
         }
-  defstruct [:stream_message]
+  defstruct [:message]
 
-  oneof :stream_message, 0
-  field :create_lobby, 1, type: Lgrpc.CreateLobbyRequest, oneof: 0
-  field :join_lobby, 2, type: Lgrpc.JoinSessionRequest, oneof: 0
+  field :message, 1, type: :string
 end
 
-defmodule Lgrpc.LobbyStreamResponse do
+defmodule Lgrpc.RecieveChatMessage do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          stream_message: {atom, any}
+          message: String.t()
         }
-  defstruct [:stream_message]
+  defstruct [:message]
 
-  oneof :stream_message, 0
-  field :create_lobby, 1, type: Lgrpc.CreateLobbyRequest, oneof: 0
-  field :join_lobby, 2, type: Lgrpc.JoinSessionResponse, oneof: 0
+  field :message, 1, type: :string
+end
+
+defmodule Lgrpc.LobbyStreamClient do
+  @moduledoc false
+  use Protobuf, syntax: :proto3
+
+  @type t :: %__MODULE__{
+          chat_message: Lgrpc.SendChatMessage.t() | nil
+        }
+  defstruct [:chat_message]
+
+  field :chat_message, 2, type: Lgrpc.SendChatMessage
+end
+
+defmodule Lgrpc.LobbyStreamServer do
+  @moduledoc false
+  use Protobuf, syntax: :proto3
+
+  @type t :: %__MODULE__{
+          chat_message: Lgrpc.RecieveChatMessage.t() | nil
+        }
+  defstruct [:chat_message]
+
+  field :chat_message, 2, type: Lgrpc.RecieveChatMessage
 end
 
 defmodule Lgrpc.LobbyInfo do
@@ -126,7 +165,7 @@ defmodule Lgrpc.LobbyInfo do
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          lobby_uuid: String.t(),
+          lobby_uuid: binary,
           lobby_name: String.t(),
           map_name: String.t(),
           max_players: non_neg_integer,
@@ -134,7 +173,7 @@ defmodule Lgrpc.LobbyInfo do
         }
   defstruct [:lobby_uuid, :lobby_name, :map_name, :max_players, :lobby_state]
 
-  field :lobby_uuid, 1, type: :string
+  field :lobby_uuid, 1, type: :bytes
   field :lobby_name, 2, type: :string
   field :map_name, 3, type: :string
   field :max_players, 4, type: :uint32
@@ -155,15 +194,15 @@ defmodule Lgrpc.FindLobbiesResponse do
 
   @type t :: %__MODULE__{
           result_code: Lgrpc.ResultCode.t(),
-          sessions: [Lgrpc.LobbyInfo.t()]
+          lobbies: [Lgrpc.LobbyInfo.t()]
         }
-  defstruct [:result_code, :sessions]
+  defstruct [:result_code, :lobbies]
 
   field :result_code, 1, type: Lgrpc.ResultCode, enum: true
-  field :sessions, 2, repeated: true, type: Lgrpc.LobbyInfo
+  field :lobbies, 2, repeated: true, type: Lgrpc.LobbyInfo
 end
 
-defmodule Lgrpc.RegisterServerRequest do
+defmodule Lgrpc.RegisterSessionRequest do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
@@ -175,7 +214,7 @@ defmodule Lgrpc.RegisterServerRequest do
   field :port, 1, type: :uint32
 end
 
-defmodule Lgrpc.UnregisterServerRequest do
+defmodule Lgrpc.UnregisterSessionRequest do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
@@ -187,9 +226,11 @@ defmodule Lgrpc.LaytonClient.Service do
   @moduledoc false
   use GRPC.Service, name: "lgrpc.LaytonClient"
 
-  rpc :CreateAccount, Lgrpc.AccountCredentials, Lgrpc.Result
-  rpc :Login, Lgrpc.AccountCredentials, Lgrpc.Result
-  rpc :JoinLobbyStream, stream(Lgrpc.LobbyStreamRequest), stream(Lgrpc.LobbyStreamResponse)
+  rpc :CreateAccount, Lgrpc.CreateAccountRequest, Lgrpc.Result
+  rpc :Login, Lgrpc.LoginRequest, Lgrpc.LoginResponse
+  rpc :CreateLobby, Lgrpc.CreateLobbyRequest, Lgrpc.CreateLobbyResponse
+  rpc :JoinLobby, Lgrpc.JoinLobbyRequest, Lgrpc.Result
+  rpc :SubscribeLobbyStream, stream(Lgrpc.LobbyStreamClient), stream(Lgrpc.LobbyStreamServer)
   rpc :FindLobbies, Lgrpc.FindLobbiesRequest, Lgrpc.FindLobbiesResponse
 end
 
@@ -202,8 +243,8 @@ defmodule Lgrpc.LaytonGameSession.Service do
   @moduledoc false
   use GRPC.Service, name: "lgrpc.LaytonGameSession"
 
-  rpc :RegisterServer, Lgrpc.RegisterServerRequest, Lgrpc.Result
-  rpc :UnregisterServer, Lgrpc.UnregisterServerRequest, Lgrpc.Result
+  rpc :RegisterSession, Lgrpc.RegisterSessionRequest, Lgrpc.Result
+  rpc :UnregisterSession, Lgrpc.UnregisterSessionRequest, Lgrpc.Result
 end
 
 defmodule Lgrpc.LaytonGameSession.Stub do

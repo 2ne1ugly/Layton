@@ -1,4 +1,4 @@
-defmodule Layton.System.LobbySessionServer do
+defmodule Layton.System.GameSessionServer do
   @moduledoc """
   Server that keeps track on list of lobbies (including on-going ones.)
   """
@@ -40,7 +40,7 @@ defmodule Layton.System.LobbySessionServer do
 
   @impl true
   def init([]) do
-    {:ok, %LobbySessionServer{}}
+    {:ok, %GameSessionServer{}}
   end
 
   @impl true

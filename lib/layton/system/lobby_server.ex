@@ -1,34 +1,34 @@
-defmodule Layton.System.LobbySessionServer do
+defmodule Layton.System.LobbyServer do
   @moduledoc """
   Server that keeps track on list of lobbies (including on-going ones.)
   """
   use GenServer
   alias __MODULE__
 
-  defstruct session_map: %{}
+  defstruct lobby_map: %{}
 
   #
   # Client Functions
   #
 
-  def create_session(session) do
-    GenServer.call(__MODULE__, {:create_session, session})
+  def create_lobby(player, lobby) do
+    GenServer.call(__MODULE__, {:create_lobby, player, lobby})
   end
 
-  def find_sessions() do
-    GenServer.call(__MODULE__, :find_sessions)
+  def find_lobbies() do
+    GenServer.call(__MODULE__, :find_lobbies)
   end
 
-  def start_session() do
-    GenServer.call(__MODULE__, :start_session)
+  def start_lobby() do
+    GenServer.call(__MODULE__, :start_lobby)
   end
 
-  def join_session() do
-    GenServer.call(__MODULE__, :join_session)
+  def join_lobby(player, lobby_uuid) do
+    GenServer.call(__MODULE__, {:join_lobby, player, lobby_uuid})
   end
 
-  def leave_session() do
-    GenServer.call(__MODULE__, :leave_session)
+  def leave_lobby() do
+    GenServer.call(__MODULE__, :leave_lobby)
   end
 
   #
@@ -40,29 +40,37 @@ defmodule Layton.System.LobbySessionServer do
 
   @impl true
   def init([]) do
-    {:ok, %LobbySessionServer{}}
+    {:ok, %LobbyServer{}}
   end
 
   @impl true
-  def handle_call({:create_session, session}, _from, state) do
-    if Map.has_key?(state.session_map, session.session_name) do
-      {:reply, {:error, :already_exists}, state}
-    else
-      state = %{
-        state
-        | session_map: Map.put_new(state.session_map, session.session_name, session)
-      }
+  def handle_call({:create_lobby, player, lobby}, _from, state) do
+    lobby = %{lobby |
+      lobby_uuid: Ecto.UUID.bingenerate(),
+      host_player: player,
+      players: [player]
+    }
+    state = %{ state | lobby_map: Map.put_new(state.lobby_map, lobby.lobby_uuid, lobby) }
+    Layton.System.PlayerServer.update_current_lobby(player.username, lobby.lobby_uuid)
+    {:reply, lobby.lobby_uuid, state}
+  end
 
-      {:reply, :ok, state}
+  @impl true
+  def handle_call(:find_lobbies, _from, state) do
+    {:reply, Map.values(state.lobby_map), state}
+  end
+
+  @impl true
+  def handle_call({:join_lobby, player, lobby_uuid}, _from, state) do
+    case Map.get(state.lobby_map, lobby_uuid) do
+      nil -> {:reply, :error, state}
+      lobby ->
+        if length(lobby.players) >= lobby.max_players do
+          {:reply, :error, state}
+        else
+          state = update_in(state.lobby_map[lobby_uuid].players, &(&1 ++ [player]))
+          {:reply, :ok, state}
+        end
     end
   end
-
-  @impl true
-  def handle_call({:find_sessions, session}, _from, state) do
-    {:reply, session.session_map, state}
-  end
-end
-
-defmodule Layton.Types.Session do
-  defstruct session_name: ""
 end

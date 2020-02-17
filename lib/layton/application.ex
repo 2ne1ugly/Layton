@@ -8,7 +8,10 @@ defmodule Layton.Application do
 
     children = [
       Layton.Repo,
-      supervisor(GRPC.Server.Supervisor, [{Layton.Endpoint, 50051}])
+      Layton.System.LobbyServer,
+      Layton.System.GameSessionServer,
+      Layton.System.PlayerServer,
+      supervisor(GRPC.Server.Supervisor, [{Layton.Client.Endpoint, 50051}])
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
