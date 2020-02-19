@@ -35,7 +35,7 @@ defmodule Layton.System.GameSessionServer do
   # Bindings
   #
   def start_link(_args) do
-    GenServer.start(__MODULE__, [], name: __MODULE__)
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
   @impl true

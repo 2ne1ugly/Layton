@@ -13,11 +13,12 @@ defmodule Lgrpc.LobbyState do
   @moduledoc false
   use Protobuf, enum: true, syntax: :proto3
 
-  @type t :: integer | :LS_ERROR | :LS_WAITING_FOR_MATCH | :LS_IN_PROGRESS
+  @type t :: integer | :LS_ERROR | :LS_PENDING | :LS_WAITING_FOR_MATCH | :LS_IN_PROGRESS
 
   field :LS_ERROR, 0
-  field :LS_WAITING_FOR_MATCH, 1
-  field :LS_IN_PROGRESS, 2
+  field :LS_PENDING, 1
+  field :LS_WAITING_FOR_MATCH, 2
+  field :LS_IN_PROGRESS, 3
 end
 
 defmodule Lgrpc.Result do
@@ -112,19 +113,19 @@ defmodule Lgrpc.JoinLobbyRequest do
   field :lobby_uuid, 1, type: :bytes
 end
 
-defmodule Lgrpc.SendChatMessage do
+defmodule Lgrpc.LeaveLobbyRequest do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          message: String.t()
+          lobby_uuid: binary
         }
-  defstruct [:message]
+  defstruct [:lobby_uuid]
 
-  field :message, 1, type: :string
+  field :lobby_uuid, 1, type: :bytes
 end
 
-defmodule Lgrpc.RecieveChatMessage do
+defmodule Lgrpc.ChatMessage do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
@@ -141,11 +142,11 @@ defmodule Lgrpc.LobbyStreamClient do
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          chat_message: Lgrpc.SendChatMessage.t() | nil
+          chat_message: Lgrpc.ChatMessage.t() | nil
         }
   defstruct [:chat_message]
 
-  field :chat_message, 2, type: Lgrpc.SendChatMessage
+  field :chat_message, 2, type: Lgrpc.ChatMessage
 end
 
 defmodule Lgrpc.LobbyStreamServer do
@@ -153,11 +154,11 @@ defmodule Lgrpc.LobbyStreamServer do
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          chat_message: Lgrpc.RecieveChatMessage.t() | nil
+          chat_message: Lgrpc.ChatMessage.t() | nil
         }
   defstruct [:chat_message]
 
-  field :chat_message, 2, type: Lgrpc.RecieveChatMessage
+  field :chat_message, 2, type: Lgrpc.ChatMessage
 end
 
 defmodule Lgrpc.LobbyInfo do
@@ -230,7 +231,8 @@ defmodule Lgrpc.LaytonClient.Service do
   rpc :Login, Lgrpc.LoginRequest, Lgrpc.LoginResponse
   rpc :CreateLobby, Lgrpc.CreateLobbyRequest, Lgrpc.CreateLobbyResponse
   rpc :JoinLobby, Lgrpc.JoinLobbyRequest, Lgrpc.Result
-  rpc :SubscribeLobbyStream, stream(Lgrpc.LobbyStreamClient), stream(Lgrpc.LobbyStreamServer)
+  rpc :LeaveLobby, Lgrpc.LeaveLobbyRequest, Lgrpc.Result
+  rpc :StreamLobby, stream(Lgrpc.LobbyStreamClient), stream(Lgrpc.LobbyStreamServer)
   rpc :FindLobbies, Lgrpc.FindLobbiesRequest, Lgrpc.FindLobbiesResponse
 end
 

@@ -15,8 +15,8 @@ defmodule Layton.System.PlayerServer do
     GenServer.cast(__MODULE__, {:update_current_lobby, username, lobby_uuid})
   end
 
-  def verify_auth_token(username, auth_token) do
-    GenServer.call(__MODULE__, {:verify_auth_token, username, auth_token})
+  def fetch_online_player(username, auth_token) do
+    GenServer.call(__MODULE__, {:fetch_online_player, username, auth_token})
   end
 
   def list_players() do
@@ -27,7 +27,7 @@ defmodule Layton.System.PlayerServer do
   # Bindings
   #
   def start_link(_args) do
-    GenServer.start(__MODULE__, [], name: __MODULE__)
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
   @impl true
@@ -38,20 +38,23 @@ defmodule Layton.System.PlayerServer do
   @impl true
   def handle_call({:login_player, player}, _from, state) do
     result =
-      case Map.has_key?(state.player_map, player.username) do
+      case Map.has_key?(state.player_map, player.player_info.username) do
         true -> :already_logged_in
         false -> :ok
       end
+
     player = put_in(player.auth_token, Ecto.UUID.bingenerate())
-    state = put_in(state.player_map[player.username], player)
+    state = put_in(state.player_map[player.player_info.username], player)
     {:reply, {result, player.auth_token}, state}
   end
 
   @impl true
-  def handle_call({:verify_auth_token, username, auth_token}, _from, state) do
+  def handle_call({:fetch_online_player, username, auth_token}, _from, state) do
     reply =
       case Map.fetch(state.player_map, username) do
-        :error -> :error
+        :error ->
+          :error
+
         {:ok, player} ->
           if player.auth_token == auth_token do
             {:ok, player}
@@ -59,6 +62,7 @@ defmodule Layton.System.PlayerServer do
             :error
           end
       end
+
     {:reply, reply, state}
   end
 
@@ -69,11 +73,14 @@ defmodule Layton.System.PlayerServer do
 
   @impl true
   def handle_cast({:update_current_lobby, username, lobby_uuid}, state) do
-    state =
-      case Map.fetch(state.player_map, username) do
-        :error -> state
-        {:ok, player} -> put_in(state.player_map[username], %{player | lobby_uuid: lobby_uuid})
-      end
-    {:noreply, state}
+    case Map.fetch(state.player_map, username) do
+      :error ->
+        {:noreply, state}
+
+      {:ok, player} ->
+        player = put_in(player.lobby_uuid, lobby_uuid)
+        state = put_in(state.player_map[username], player)
+        {:noreply, state}
+    end
   end
 end
