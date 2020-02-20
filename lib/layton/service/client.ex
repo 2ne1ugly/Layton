@@ -43,32 +43,6 @@ defmodule Layton.Client.Service do
     end
   end
 
-  def join_lobby(request, stream) do
-    case Layton.Utils.fetch_online_player_from_stream(stream) do
-      :error ->
-        Lgrpc.Result.new(result_code: :RC_ERROR)
-
-      {:ok, player} ->
-        case Layton.System.LobbyServer.join_lobby(player.player_info, request.lobby_uuid) do
-          :ok -> Lgrpc.Result.new(result_code: :RC_SUCCESS)
-          :error -> Lgrpc.Result.new(result_code: :RC_ERROR)
-        end
-    end
-  end
-
-  def leave_lobby(request, stream) do
-    case Layton.Utils.fetch_online_player_from_stream(stream) do
-      :error ->
-        Lgrpc.LeaveLobbyRequest.new(result_code: :RC_ERROR)
-
-      {:ok, player} ->
-        case Layton.System.LobbyServer.leave_lobby(player.player_info, request.lobby_uuid) do
-          :ok -> Lgrpc.Result.new(result_code: :RC_SUCCESS)
-          :error -> Lgrpc.Result.new(result_code: :RC_ERROR)
-        end
-    end
-  end
-
   def stream_lobby(req_enum, stream) do
     Enum.reduce(req_enum, fn elem, elems ->
       IO.inspect(elem)

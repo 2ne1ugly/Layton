@@ -5,7 +5,7 @@ defmodule Layton.System.LobbyServer do
   use GenServer
   alias __MODULE__
 
-  defstruct lobby_map: %{}
+  defstruct pending_lobby_map: %{}, lobby_map: %{}
 
   #
   # Client Functions
@@ -15,16 +15,8 @@ defmodule Layton.System.LobbyServer do
     GenServer.call(__MODULE__, {:create_lobby, player_info, lobby})
   end
 
-  def join_lobby(player_info, lobby_uuid) do
-    GenServer.call(__MODULE__, {:join_lobby, player_info, lobby_uuid})
-  end
-
-  def leave_lobby(player_info, lobby_uuid) do
-    GenServer.call(__MODULE__, {:leave_lobby, player_info, lobby_uuid})
-  end
-
-  def update_lobby_state(lobby_uuid, lobby_state) do
-    GenServer.cast(__MODULE__, {:leave_lobby, lobby_uuid, lobby_state})
+  def update_lobby(lobby_uuid, lobby) do
+    GenServer.cast(__MODULE__, {:update_lobby, lobby_uuid, lobby})
   end
 
   def get_lobby_stream(lobby_uuid) do
@@ -68,45 +60,6 @@ defmodule Layton.System.LobbyServer do
   end
 
   @impl true
-  def handle_call({:join_lobby, player_info, lobby_uuid}, _from, state) do
-    case Map.fetch(state.lobby_map, lobby_uuid) do
-      :error ->
-        {:reply, :error, state}
-
-      {:ok, lobby} ->
-        if map_size(lobby.players) >= lobby.max_players do
-          {:reply, :error, state}
-        else
-          lobby = put_in(lobby.players[player_info.username], player_info)
-          Layton.Object.LobbyStream.notify_join_lobby(lobby.stream, player_info)
-          state = put_in(state.lobby_map[lobby_uuid], lobby)
-          {:reply, :ok, state}
-        end
-    end
-  end
-
-  @impl true
-  def handle_call({:leave_lobby, player_info, lobby_uuid}, _from, state) do
-    case Map.get(state.lobby_map, lobby_uuid) do
-      nil ->
-        {:reply, :error, state}
-
-      lobby ->
-        lobby = pop_in(lobby.players[player_info.username], player_info)
-        Layton.Object.LobbyStream.notify_leave_lobby(lobby.stream, player_info)
-
-        state =
-          if map_size(lobby.players) == 0 do
-            pop_in(state.lobby_map[lobby_uuid])
-          else
-            put_in(state.lobby_map[lobby_uuid], lobby)
-          end
-
-        {:reply, :ok, state}
-    end
-  end
-
-  @impl true
   def handle_call({:get_lobby_stream, lobby_uuid}, _from, state) do
     case Map.get(state.lobby_map, lobby_uuid) do
       nil -> {:reply, :error, state}
@@ -115,8 +68,8 @@ defmodule Layton.System.LobbyServer do
   end
 
   @impl true
-  def handle_cast({:leave_lobby, lobby_uuid, lobby_state}, state) do
-    state = put_in(state.lobby_map[lobby_uuid].lobby_state, lobby_state)
+  def handle_cast({:update_lobby, lobby_uuid, lobby}, state) do
+    state = update_in(state.lobby_map[lobby_uuid], &struct(&1, Map.from_struct(lobby)))
     {:noreply, state}
   end
 end
