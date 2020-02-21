@@ -39,17 +39,17 @@ defmodule Layton.Object.LobbyStream do
     if map_size(state.players) >= state.max_players do
       {:reply, :error, state}
     else
+      username = player_info.username
       state =
         put_in(
-          state.players[player_info.username],
+          state.players[username],
           %Layton.Types.PlayerStream{stream: stream, player_info: player_info}
         )
-
-      if state.host_player_username == player_info.username do
-        state = put_in(state.lobby_state, :LS_WAITING_FOR_MATCH)
-        Layton.System.LobbyServer.activate_lobby(state)
-      end
-
+      state = 
+        case state.host_player_username do
+          ^username -> put_in(state.lobby_state, :LS_WAITING_FOR_MATCH) 
+          _ -> state 
+        end
       Layton.System.LobbyServer.update_lobby(state)
       {:reply, :ok, state}
     end
@@ -57,18 +57,12 @@ defmodule Layton.Object.LobbyStream do
 
   @impl true
   def handle_cast({:leave_lobby_stream, player_info}, state) do
-    case pop_in(state.players, player_info.username) do
-      {nil, state} ->
-        Logger.error("Trying to leave lobby that doesn't exist {player_info.username}")
-        {:noreply, state}
-
-      {_, state} ->
-        if map_size(state.players) == 0 do
-          Layton.System.LobbyServer.destroy_lobby(state)
-        else
-          Layton.System.LobbyServer.update_lobby(state)
-        end
-        {:noreply, state}
+    {elem, state} = pop_in(state.players, player_info.username)
+    case elem do
+      nil -> Logger.error("Trying to leave lobby that doesn't exist {player_info.username}")
+      %{players: players} when map_size(players) == 0 -> Layton.System.LobbyServer.destroy_lobby(state.lobby_uuid)
+      _ -> Layton.System.LobbyServer.update_lobby(state)
     end
+    {:noreply, state}
   end
 end

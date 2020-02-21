@@ -46,22 +46,14 @@ defmodule Layton.Client.Service do
 
   def lobby_stream(req_enum, stream) do
     headers = GRPC.Stream.get_headers(stream)
-    case Layton.Utils.fetch_online_player_from_stream(stream) do
-      {:ok, player} ->
-        case Layton.System.LobbyServer.get_lobby_stream(headers["custom-lobby-uuid-bin"]) do
-          {:ok, lobby_stream} ->
-            case Layton.Object.LobbyStream.join_lobby_stream(lobby_stream, player.player_info, stream) do
-              :ok ->
-                  Enum.each(req_enum, fn msg ->
-                    IO.inspect(msg)
-                  end)
-
-              :error ->
-                :noop
-            end
-          :error -> :noop
-        end
-      :error -> :noop
+    with {:ok, player} <- Layton.Utils.fetch_online_player_from_stream(stream),
+        {:ok, lobby_stream} <- Layton.System.LobbyServer.get_lobby_stream(headers["custom-lobby-uuid-bin"]),
+        :ok <- Layton.Object.LobbyStream.join_lobby_stream(lobby_stream, player.player_info, stream) do
+      Enum.each(req_enum, fn msg ->
+        IO.inspect(msg)
+      end)
+    # else
+    #   IO.inspect("hmm")
     end
   end
 

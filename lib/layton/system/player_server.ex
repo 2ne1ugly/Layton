@@ -48,22 +48,17 @@ defmodule Layton.System.PlayerServer do
     {:reply, {result, player.auth_token}, state}
   end
 
+  
   @impl true
   def handle_call({:fetch_online_player, username, auth_token}, _from, state) do
-    reply =
-      case Map.fetch(state.player_map, username) do
-        :error ->
-          :error
-
-        {:ok, player} ->
-          if player.auth_token == auth_token do
-            {:ok, player}
-          else
-            :error
-          end
-      end
-
-    {:reply, reply, state}
+    case Map.fetch(state.player_map, username) do
+      {:ok, player} ->
+        case player.auth_token do
+          ^auth_token -> {:reply, {:ok, player}, state}
+          _ -> {:reply, :error, state}          
+        end
+      :error -> {:reply, :error, state}
+    end
   end
 
   @impl true
