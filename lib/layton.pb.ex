@@ -252,7 +252,7 @@ defmodule Lgrpc.LaytonClient.Service do
   rpc :CreateAccount, Lgrpc.CreateAccountRequest, Lgrpc.Result
   rpc :Login, Lgrpc.LoginRequest, Lgrpc.LoginResponse
   rpc :CreateLobby, Lgrpc.CreateLobbyRequest, Lgrpc.CreateLobbyResponse
-  rpc :LobbyStream, stream(Lgrpc.LobbyStreamClient), stream(Lgrpc.LobbyStreamServer)
+  rpc :StreamLobby, stream(Lgrpc.LobbyStreamClient), stream(Lgrpc.LobbyStreamServer)
   rpc :FindLobbies, Lgrpc.FindLobbiesRequest, Lgrpc.FindLobbiesResponse
 end
 
