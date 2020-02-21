@@ -15,8 +15,16 @@ defmodule Layton.System.LobbyServer do
     GenServer.call(__MODULE__, {:create_lobby, player_info, lobby})
   end
 
-  def update_lobby(lobby_uuid, lobby) do
-    GenServer.cast(__MODULE__, {:update_lobby, lobby_uuid, lobby})
+  def update_lobby(lobby) do
+    GenServer.cast(__MODULE__, {:update_lobby, lobby})
+  end
+
+  def activate_lobby(%{lobby_uuid: lobby_uuid} = _lobby) do
+    GenServer.cast(__MODULE__, {:activate_lobby, lobby_uuid})
+  end
+
+  def destroy_lobby(%{lobby_uuid: lobby_uuid} = _lobby) do
+    GenServer.cast(__MODULE__, {:destroy_lobby, lobby_uuid})
   end
 
   def get_lobby_stream(lobby_uuid) do
@@ -25,6 +33,14 @@ defmodule Layton.System.LobbyServer do
 
   def find_lobbies() do
     GenServer.call(__MODULE__, :find_lobbies)
+  end
+
+  #
+  # iex Helper Functions
+  #
+
+  def find_pending_lobbies() do
+    GenServer.call(__MODULE__, :find_pending_lobbies)
   end
 
   #
@@ -44,13 +60,11 @@ defmodule Layton.System.LobbyServer do
     lobby = %{
       lobby
       | lobby_uuid: Ecto.UUID.bingenerate(),
-        host_player_username: player_info.username,
-        players: %{player_info.username => player_info}
+        host_player_username: player_info.username
     }
-
-    lobby = %{lobby | lobby_stream: Layton.Object.LobbyStream.start([lobby])}
-    state = put_in(state.lobby_map[lobby.lobby_uuid], lobby)
-    Layton.System.PlayerServer.update_current_lobby(player_info.username, lobby.lobby_uuid)
+    {:ok, stream} = Layton.Object.LobbyStream.start([lobby])
+    lobby = %{lobby | lobby_stream: stream}
+    state = put_in(state.pending_lobby_map[lobby.lobby_uuid], lobby)
     {:reply, lobby.lobby_uuid, state}
   end
 
@@ -60,16 +74,40 @@ defmodule Layton.System.LobbyServer do
   end
 
   @impl true
+  def handle_call(:find_pending_lobbies, _from, state) do
+    {:reply, Map.values(state.pending_lobby_map), state}
+  end
+
+  @impl true
   def handle_call({:get_lobby_stream, lobby_uuid}, _from, state) do
     case Map.get(state.lobby_map, lobby_uuid) do
-      nil -> {:reply, :error, state}
-      lobby -> {:reply, lobby.lobby_stream, state}
+      nil ->
+        case Map.get(state.pending_lobby_map, lobby_uuid) do
+          nil -> {:reply, :error, state}
+          lobby -> {:reply, {:ok, lobby.lobby_stream}, state}
+        end
+      lobby -> {:reply, {:ok, lobby.lobby_stream}, state}
     end
   end
 
   @impl true
-  def handle_cast({:update_lobby, lobby_uuid, lobby}, state) do
-    state = update_in(state.lobby_map[lobby_uuid], &struct(&1, Map.from_struct(lobby)))
+  def handle_cast({:activate_lobby, lobby_uuid}, state) do
+    {lobby, state} = pop_in(state.pending_lobby_map[lobby_uuid])
+    state = put_in(state.lobby_map[lobby_uuid], lobby)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:update_lobby, lobby}, state) do
+    new_lobby = struct(state.lobby_map[lobby.lobby_uuid], Map.from_struct(lobby))
+    new_lobby = put_in(new_lobby.num_players, map_size(lobby.players))
+    state = put_in(state.lobby_map[lobby.lobby_uuid], new_lobby)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:destroy_lobby, lobby_uuid}, state) do
+    {_, state} = pop_in(state.lobby_map[lobby_uuid])
     {:noreply, state}
   end
 end

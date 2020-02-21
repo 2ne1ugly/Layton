@@ -1,5 +1,6 @@
 defmodule Layton.Client.Service do
   use GRPC.Server, service: Lgrpc.LaytonClient.Service
+  require Logger
 
   ##
   ##  identity
@@ -43,10 +44,25 @@ defmodule Layton.Client.Service do
     end
   end
 
-  def stream_lobby(req_enum, stream) do
-    Enum.reduce(req_enum, fn elem, elems ->
-      IO.inspect(elem)
-      end)
+  def lobby_stream(req_enum, stream) do
+    headers = GRPC.Stream.get_headers(stream)
+    case Layton.Utils.fetch_online_player_from_stream(stream) do
+      {:ok, player} ->
+        case Layton.System.LobbyServer.get_lobby_stream(headers["custom-lobby-uuid-bin"]) do
+          {:ok, lobby_stream} ->
+            case Layton.Object.LobbyStream.join_lobby_stream(lobby_stream, player.player_info, stream) do
+              :ok ->
+                  Enum.each(req_enum, fn msg ->
+                    IO.inspect(msg)
+                  end)
+
+              :error ->
+                :noop
+            end
+          :error -> :noop
+        end
+      :error -> :noop
+    end
   end
 
   def find_lobbies(_request, _stream) do

@@ -5,7 +5,7 @@ defmodule Layton.Types.Lobby do
             map_name: "",
             host_player_username: "",
             max_players: 10,
-            players: [],
+            num_players: 0,
             lobby_state: :LS_PENDING
 end
 
@@ -19,5 +19,5 @@ defmodule Layton.Types.Player do
 end
 
 defmodule Layton.Types.PlayerStream do
-  defstruct stream: nil
+  defstruct stream: nil, player_info: nil
 end
