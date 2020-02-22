@@ -48,12 +48,19 @@ defmodule Layton.Client.Service do
     headers = GRPC.Stream.get_headers(stream)
     with {:ok, player} <- Layton.Utils.fetch_online_player_from_stream(stream),
         {:ok, lobby_stream} <- Layton.System.LobbyServer.get_lobby_stream(headers["custom-lobby-uuid-bin"]),
-        :ok <- Layton.Object.LobbyStream.join_lobby_stream(lobby_stream, player.player_info, stream) do
+        {:ok, lobby} <- Layton.Object.LobbyStream.join_lobby_stream(lobby_stream, player.player_info, stream) do
+      init = %{
+        struct(Lgrpc.LobbyStreamInitialize, Map.from_struct(lobby)) |
+        result_code: :RC_SUCCESS
+      }
+      GRPC.Server.send_reply(stream, Lgrpc.LobbyStreamServer.new(init: init))
       Enum.each(req_enum, fn msg ->
         IO.inspect(msg)
       end)
-    # else
-    #   IO.inspect("hmm")
+    else
+      _ ->
+        init = Lgrpc.LobbyStreamInitialize.new()
+        GRPC.Server.send_reply(stream, Lgrpc.LobbyStreamServer.new(init: init))
     end
   end
 

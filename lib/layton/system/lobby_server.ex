@@ -19,10 +19,6 @@ defmodule Layton.System.LobbyServer do
     GenServer.cast(__MODULE__, {:update_lobby, lobby})
   end
 
-  # def activate_lobby(lobby_uuid) do
-  #   GenServer.cast(__MODULE__, {:activate_lobby, lobby_uuid})
-  # end
-
   def destroy_lobby(lobby_uuid) do
     GenServer.cast(__MODULE__, {:destroy_lobby, lobby_uuid})
   end
@@ -34,14 +30,6 @@ defmodule Layton.System.LobbyServer do
   def find_lobbies() do
     GenServer.call(__MODULE__, :find_lobbies)
   end
-
-  #
-  # iex Helper Functions
-  #
-
-  # def find_pending_lobbies() do
-  #   GenServer.call(__MODULE__, :find_pending_lobbies)
-  # end
 
   #
   # Bindings
@@ -73,11 +61,6 @@ defmodule Layton.System.LobbyServer do
     {:reply, Map.values(state.lobby_map), state}
   end
 
-  # @impl true
-  # def handle_call(:find_pending_lobbies, _from, state) do
-  #   {:reply, Map.values(state.pending_lobby_map), state}
-  # end
-
   @impl true
   def handle_call({:get_lobby_stream, lobby_uuid}, _from, state) do
     case Map.get(state.lobby_map, lobby_uuid) do
@@ -85,13 +68,6 @@ defmodule Layton.System.LobbyServer do
       lobby -> {:reply, {:ok, lobby.lobby_stream}, state}
     end
   end
-
-  # @impl true
-  # def handle_cast({:activate_lobby, lobby_uuid}, state) do
-  #   {lobby, state} = pop_in(state.pending_lobby_map[lobby_uuid])
-  #   state = put_in(state.lobby_map[lobby_uuid], lobby)
-  #   {:noreply, state}
-  # end
 
   @impl true
   def handle_cast({:update_lobby, lobby}, state) do

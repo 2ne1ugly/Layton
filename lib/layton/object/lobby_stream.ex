@@ -45,13 +45,13 @@ defmodule Layton.Object.LobbyStream do
           state.players[username],
           %Layton.Types.PlayerStream{stream: stream, player_info: player_info}
         )
-      state = 
+      state =
         case state.host_player_username do
-          ^username -> put_in(state.lobby_state, :LS_WAITING_FOR_MATCH) 
-          _ -> state 
+          ^username -> put_in(state.lobby_state, :LS_WAITING_FOR_MATCH)
+          _ -> state
         end
       Layton.System.LobbyServer.update_lobby(state)
-      {:reply, :ok, state}
+      {:reply, {:ok, state}, state}
     end
   end
 
