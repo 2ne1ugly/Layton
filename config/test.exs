@@ -1,12 +1,12 @@
-import Config
+use Mix.Config
 
 config :layton, Layton.Repo,
-  database: "layton",
+  database: "layton_test",
   username: "layton",
   password: "moobot",
-  hostname: "localhost"
+  hostname: "localhost",
+  pool: Ecto.Adapters.SQL.Sandbox
 
 config :layton, ecto_repos: [Layton.Repo]
 config :grpc, start_server: true
-
-import_config "#{Mix.env()}.exs"
+# config :logger, backends: []

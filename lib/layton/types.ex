@@ -15,7 +15,7 @@ end
 
 defmodule Layton.Types.Player do
   alias __MODULE__
-  defstruct player_info: %Player.PlayerInfo{}, auth_token: "", current_lobby: "", lobby_uuid: ""
+  defstruct player_info: %Player.PlayerInfo{}, auth_token: "", lobby_uuid: ""
 end
 
 defmodule Layton.Types.PlayerStream do

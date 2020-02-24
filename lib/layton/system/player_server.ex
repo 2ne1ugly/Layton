@@ -19,6 +19,10 @@ defmodule Layton.System.PlayerServer do
     GenServer.call(__MODULE__, {:fetch_online_player, username, auth_token})
   end
 
+  #
+  # iex helpers
+  #
+
   def list_players() do
     GenServer.call(__MODULE__, :list_players)
   end
@@ -48,14 +52,14 @@ defmodule Layton.System.PlayerServer do
     {:reply, {result, player.auth_token}, state}
   end
 
-  
+
   @impl true
   def handle_call({:fetch_online_player, username, auth_token}, _from, state) do
     case Map.fetch(state.player_map, username) do
       {:ok, player} ->
         case player.auth_token do
           ^auth_token -> {:reply, {:ok, player}, state}
-          _ -> {:reply, :error, state}          
+          _ -> {:reply, :error, state}
         end
       :error -> {:reply, :error, state}
     end
@@ -63,7 +67,7 @@ defmodule Layton.System.PlayerServer do
 
   @impl true
   def handle_call(:list_players, _from, state) do
-    {:reply, state.player_map, state}
+    {:reply, Map.values(state.player_map), state}
   end
 
   @impl true

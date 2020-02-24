@@ -9,7 +9,6 @@ defmodule Layton.Application do
     children = [
       Layton.Repo,
       Layton.System.LobbyServer,
-      Layton.System.GameSessionServer,
       Layton.System.PlayerServer,
       supervisor(GRPC.Server.Supervisor, [{Layton.Client.Endpoint, 50051}])
     ]

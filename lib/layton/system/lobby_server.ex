@@ -72,7 +72,7 @@ defmodule Layton.System.LobbyServer do
   @impl true
   def handle_cast({:update_lobby, lobby}, state) do
     new_lobby = struct(state.lobby_map[lobby.lobby_uuid], Map.from_struct(lobby))
-    new_lobby = put_in(new_lobby.num_players, map_size(lobby.players))
+    new_lobby = put_in(new_lobby.num_players, map_size(lobby.player_streams))
     state = put_in(state.lobby_map[lobby.lobby_uuid], new_lobby)
     {:noreply, state}
   end
