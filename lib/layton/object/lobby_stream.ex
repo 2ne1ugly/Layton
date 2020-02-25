@@ -18,6 +18,10 @@ defmodule Layton.Object.LobbyStream do
     GenServer.call(pid, {:join_lobby_stream, player_info, stream})
   end
 
+  def send_chat_message(pid, player_info, message) do
+    GenServer.cast(pid, {:send_chat_message, player_info, message})
+  end
+
   def leave_lobby_stream(pid, player_info) do
     GenServer.cast(pid, {:leave_lobby_stream, player_info})
   end
@@ -53,6 +57,18 @@ defmodule Layton.Object.LobbyStream do
       Layton.System.LobbyServer.update_lobby(state)
       {:reply, {:ok, state}, state}
     end
+  end
+
+  @impl true
+  def handle_cast({:send_chat_message, player_info, message}, state) do
+    msg = Lgrpc.LobbyStreamServer.new(%{
+      message: {:receive_chat_message, Lgrpc.RecieveChatMessage.new(%{
+        username: player_info.username,
+        message: message
+      })}
+    })
+    Enum.each(state.player_streams, &GRPC.Server.send_reply(&1.stream, msg))
+    {:noreply, state}
   end
 
   @impl true

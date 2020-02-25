@@ -56,7 +56,10 @@ defmodule Layton.Client.Service do
         |> struct(Map.from_struct(lobby))
       GRPC.Server.send_reply(stream, Lgrpc.LobbyStreamServer.new(message: {:init, init}))
       Enum.each(req_enum, fn msg ->
-        IO.inspect(msg)
+        case msg.message do
+          {:send_chat_message, message} -> Layton.Object.LobbyStream.send_chat_message(lobby_stream, player.player_info, message.message)
+          {_, arbitary} -> IO.inspect(arbitary)
+        end
       end)
       Layton.Object.LobbyStream.leave_lobby_stream(lobby_stream, player.player_info)
     else

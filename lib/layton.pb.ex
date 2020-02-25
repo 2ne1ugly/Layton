@@ -143,7 +143,7 @@ defmodule Lgrpc.LeaveLobbyRequest do
   field :lobby_uuid, 1, type: :bytes
 end
 
-defmodule Lgrpc.ChatMessage do
+defmodule Lgrpc.SendChatMessage do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
@@ -153,6 +153,20 @@ defmodule Lgrpc.ChatMessage do
   defstruct [:message]
 
   field :message, 1, type: :string
+end
+
+defmodule Lgrpc.RecieveChatMessage do
+  @moduledoc false
+  use Protobuf, syntax: :proto3
+
+  @type t :: %__MODULE__{
+          username: String.t(),
+          message: String.t()
+        }
+  defstruct [:username, :message]
+
+  field :username, 1, type: :string
+  field :message, 2, type: :string
 end
 
 defmodule Lgrpc.PlayerInfo do
@@ -200,7 +214,7 @@ defmodule Lgrpc.LobbyStreamClient do
 
   oneof :message, 0
   field :action, 1, type: Lgrpc.LobbyStreamAction, enum: true, oneof: 0
-  field :chat_message, 2, type: Lgrpc.ChatMessage, oneof: 0
+  field :send_chat_message, 2, type: Lgrpc.SendChatMessage, oneof: 0
 end
 
 defmodule Lgrpc.LobbyStreamServer do
@@ -215,7 +229,7 @@ defmodule Lgrpc.LobbyStreamServer do
   oneof :message, 0
   field :init, 1, type: Lgrpc.LobbyStreamInitialize, oneof: 0
   field :action, 2, type: Lgrpc.LobbyStreamAction, enum: true, oneof: 0
-  field :chat_message, 3, type: Lgrpc.ChatMessage, oneof: 0
+  field :recieve_chat_message, 3, type: Lgrpc.RecieveChatMessage, oneof: 0
 end
 
 defmodule Lgrpc.LobbyInfo do
