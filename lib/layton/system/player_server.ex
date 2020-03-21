@@ -47,7 +47,7 @@ defmodule Layton.System.PlayerServer do
         false -> :ok
       end
 
-    player = put_in(player.auth_token, Ecto.UUID.bingenerate())
+    player = put_in(player.auth_token, Ecto.UUID.generate())
     state = put_in(state.player_map[player.player_info.username], player)
     {:reply, {result, player.auth_token}, state}
   end

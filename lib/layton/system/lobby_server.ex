@@ -47,13 +47,13 @@ defmodule Layton.System.LobbyServer do
   def handle_call({:create_lobby, player_info, lobby}, _from, state) do
     lobby = %{
       lobby
-      | lobby_uuid: Ecto.UUID.bingenerate(),
+      | lobby_uuid: Ecto.UUID.generate(),
         host_player_username: player_info.username
     }
     {:ok, stream} = Layton.Object.LobbyStream.start([lobby])
     lobby = %{lobby | lobby_stream: stream}
     state = put_in(state.lobby_map[lobby.lobby_uuid], lobby)
-    {:reply, lobby.lobby_uuid, state}
+    {:reply, Ecto.UUID.load(lobby.lobby_uuid) , state}
   end
 
   @impl true
