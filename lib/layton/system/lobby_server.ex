@@ -53,7 +53,7 @@ defmodule Layton.System.LobbyServer do
     {:ok, stream} = Layton.Object.LobbyStream.start([lobby])
     lobby = %{lobby | lobby_stream: stream}
     state = put_in(state.lobby_map[lobby.lobby_uuid], lobby)
-    {:reply, Ecto.UUID.load(lobby.lobby_uuid) , state}
+    {:reply, lobby.lobby_uuid, state}
   end
 
   @impl true

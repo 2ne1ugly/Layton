@@ -81,12 +81,12 @@ defmodule Lgrpc.LoginResponse do
 
   @type t :: %__MODULE__{
           result_code: Lgrpc.ResultCode.t(),
-          auth_token: binary
+          auth_token: String.t()
         }
   defstruct [:result_code, :auth_token]
 
   field :result_code, 1, type: Lgrpc.ResultCode, enum: true
-  field :auth_token, 2, type: :bytes
+  field :auth_token, 2, type: :string
 end
 
 defmodule Lgrpc.CreateLobbyRequest do
@@ -111,12 +111,12 @@ defmodule Lgrpc.CreateLobbyResponse do
 
   @type t :: %__MODULE__{
           result_code: Lgrpc.ResultCode.t(),
-          lobby_uuid: binary
+          lobby_uuid: String.t()
         }
   defstruct [:result_code, :lobby_uuid]
 
   field :result_code, 1, type: Lgrpc.ResultCode, enum: true
-  field :lobby_uuid, 2, type: :bytes
+  field :lobby_uuid, 2, type: :string
 end
 
 defmodule Lgrpc.JoinLobbyRequest do
@@ -124,11 +124,11 @@ defmodule Lgrpc.JoinLobbyRequest do
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          lobby_uuid: binary
+          lobby_uuid: String.t()
         }
   defstruct [:lobby_uuid]
 
-  field :lobby_uuid, 1, type: :bytes
+  field :lobby_uuid, 1, type: :string
 end
 
 defmodule Lgrpc.LeaveLobbyRequest do
@@ -136,11 +136,11 @@ defmodule Lgrpc.LeaveLobbyRequest do
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          lobby_uuid: binary
+          lobby_uuid: String.t()
         }
   defstruct [:lobby_uuid]
 
-  field :lobby_uuid, 1, type: :bytes
+  field :lobby_uuid, 1, type: :string
 end
 
 defmodule Lgrpc.SendChatMessage do
@@ -155,7 +155,7 @@ defmodule Lgrpc.SendChatMessage do
   field :message, 1, type: :string
 end
 
-defmodule Lgrpc.RecieveChatMessage do
+defmodule Lgrpc.ReceiveChatMessage do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
@@ -229,7 +229,9 @@ defmodule Lgrpc.LobbyStreamServer do
   oneof :message, 0
   field :init, 1, type: Lgrpc.LobbyStreamInitialize, oneof: 0
   field :action, 2, type: Lgrpc.LobbyStreamAction, enum: true, oneof: 0
-  field :recieve_chat_message, 3, type: Lgrpc.RecieveChatMessage, oneof: 0
+  field :receive_chat_message, 3, type: Lgrpc.ReceiveChatMessage, oneof: 0
+  field :player_joined, 4, type: Lgrpc.PlayerInfo, oneof: 0
+  field :player_left, 5, type: :string, oneof: 0
 end
 
 defmodule Lgrpc.LobbyInfo do
@@ -237,7 +239,7 @@ defmodule Lgrpc.LobbyInfo do
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          lobby_uuid: binary,
+          lobby_uuid: String.t(),
           lobby_name: String.t(),
           map_name: String.t(),
           max_players: non_neg_integer,
@@ -245,7 +247,7 @@ defmodule Lgrpc.LobbyInfo do
         }
   defstruct [:lobby_uuid, :lobby_name, :map_name, :max_players, :lobby_state]
 
-  field :lobby_uuid, 1, type: :bytes
+  field :lobby_uuid, 1, type: :string
   field :lobby_name, 2, type: :string
   field :map_name, 3, type: :string
   field :max_players, 4, type: :uint32

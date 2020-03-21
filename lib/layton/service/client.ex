@@ -48,7 +48,7 @@ defmodule Layton.Client.Service do
   def lobby_stream(req_enum, stream) do
     headers = GRPC.Stream.get_headers(stream)
     with {:ok, player} <- Layton.Utils.fetch_online_player_from_stream(stream),
-        {:ok, lobby_stream} <- Layton.System.LobbyServer.get_lobby_stream(headers["custom-lobby-uuid-bin"]),
+        {:ok, lobby_stream} <- Layton.System.LobbyServer.get_lobby_stream(headers["custom-lobby-uuid"]),
         {:ok, lobby} <- Layton.Object.LobbyStream.join_lobby_stream(lobby_stream, player.player_info, stream) do
       players = Enum.map(Map.values(lobby.player_streams), &Lgrpc.PlayerInfo.new(Map.from_struct(&1.player_info)))
       init =

@@ -35,7 +35,7 @@ defmodule Layton.MixProject do
     [
       {:ecto_sql, "~> 3.0"},
       {:postgrex, ">= 0.0.0"},
-      {:grpc, github: "elixir-grpc/grpc"},
+      {:grpc, github: "elixir-grpc/grpc", branch: "fix-read-blocked"},
       {:cowlib, "~> 2.8.0", hex: :grpc_cowlib, override: true},
       {:protobuf, "~> 0.7.1"},
       {:google_protos, "~> 0.1"}

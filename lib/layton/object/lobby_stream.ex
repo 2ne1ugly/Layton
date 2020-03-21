@@ -62,12 +62,12 @@ defmodule Layton.Object.LobbyStream do
   @impl true
   def handle_cast({:send_chat_message, player_info, message}, state) do
     msg = Lgrpc.LobbyStreamServer.new(%{
-      message: {:receive_chat_message, Lgrpc.RecieveChatMessage.new(%{
+      message: {:receive_chat_message, Lgrpc.ReceiveChatMessage.new(%{
         username: player_info.username,
         message: message
       })}
     })
-    Enum.each(state.player_streams, &GRPC.Server.send_reply(&1.stream, msg))
+    Enum.each(Map.values(state.player_streams), &GRPC.Server.send_reply(&1.stream, msg))
     {:noreply, state}
   end
 
