@@ -18,7 +18,7 @@ defmodule Layton.MixProject do
 
   defp aliases do
     [
-     test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"]
     ]
   end
 

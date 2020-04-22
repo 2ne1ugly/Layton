@@ -50,6 +50,7 @@ defmodule Layton.System.LobbyServer do
       | lobby_uuid: Ecto.UUID.generate(),
         host_player_username: player_info.username
     }
+
     {:ok, stream} = Layton.Object.LobbyStream.start([lobby])
     lobby = %{lobby | lobby_stream: stream}
     state = put_in(state.lobby_map[lobby.lobby_uuid], lobby)

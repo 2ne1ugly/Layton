@@ -4,9 +4,10 @@ defmodule Layton.Utils do
   """
   def fetch_online_player_from_stream(stream) do
     headers = GRPC.Stream.get_headers(stream)
+
     case Layton.System.PlayerServer.fetch_online_player(
-          headers["custom-username"],
-          headers["custom-auth-token"]
+           headers["custom-username"],
+           headers["custom-auth-token"]
          ) do
       :error -> :error
       {:ok, player} -> {:ok, player}

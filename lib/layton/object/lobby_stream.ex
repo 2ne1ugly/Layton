@@ -44,16 +44,26 @@ defmodule Layton.Object.LobbyStream do
       {:reply, :error, state}
     else
       username = player_info.username
+
+      msg =
+        Lgrpc.LobbyStreamServer.new(%{
+          message: {:player_joined, Lgrpc.PlayerInfo.new(Map.from_struct(player_info))}
+        })
+
+      Enum.each(Map.values(state.player_streams), &GRPC.Server.send_reply(&1.stream, msg))
+
       state =
         put_in(
           state.player_streams[username],
           %Layton.Types.PlayerStream{stream: stream, player_info: player_info}
         )
+
       state =
         case state.host_player_username do
           ^username -> put_in(state.lobby_state, :LS_WAITING_FOR_MATCH)
           _ -> state
         end
+
       Layton.System.LobbyServer.update_lobby(state)
       {:reply, {:ok, state}, state}
     end
@@ -61,12 +71,16 @@ defmodule Layton.Object.LobbyStream do
 
   @impl true
   def handle_cast({:send_chat_message, player_info, message}, state) do
-    msg = Lgrpc.LobbyStreamServer.new(%{
-      message: {:receive_chat_message, Lgrpc.ReceiveChatMessage.new(%{
-        username: player_info.username,
-        message: message
-      })}
-    })
+    msg =
+      Lgrpc.LobbyStreamServer.new(%{
+        message:
+          {:receive_chat_message,
+           Lgrpc.ReceiveChatMessage.new(%{
+             username: player_info.username,
+             message: message
+           })}
+      })
+
     Enum.each(Map.values(state.player_streams), &GRPC.Server.send_reply(&1.stream, msg))
     {:noreply, state}
   end
@@ -74,11 +88,18 @@ defmodule Layton.Object.LobbyStream do
   @impl true
   def handle_cast({:leave_lobby_stream, player_info}, state) do
     {elem, state} = pop_in(state.player_streams, player_info.username)
+
     case elem do
-      nil -> Logger.error("Trying to leave lobby that doesn't exist {player_info.username}")
-      %{player_streams: player_streams} when map_size(player_streams) == 0 -> Layton.System.LobbyServer.destroy_lobby(state.lobby_uuid)
-      _ -> Layton.System.LobbyServer.update_lobby(state)
+      nil ->
+        Logger.error("Trying to leave lobby that doesn't exist {player_info.username}")
+
+      %{player_streams: player_streams} when map_size(player_streams) == 0 ->
+        Layton.System.LobbyServer.destroy_lobby(state.lobby_uuid)
+
+      _ ->
+        Layton.System.LobbyServer.update_lobby(state)
     end
+
     {:noreply, state}
   end
 end
